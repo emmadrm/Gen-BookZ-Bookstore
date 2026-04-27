@@ -1,19 +1,25 @@
-import React, { useContext } from 'react';
-import { CartContext } from '../context/Cart.jsx'; 
-import { Link, useNavigate } from 'react-router-dom';
-import '../index.css'; 
+import React, { useContext } from "react";
+import { CartContext } from "../context/Cart.jsx";
+import { Link, useNavigate } from "react-router-dom";
+import "../index.css";
 
 const CartPage = () => {
-  const { cart, addToCart, decreaseQuantity, removeFromCart } = useContext(CartContext);
+  const { cart, addToCart, decreaseQuantity, removeFromCart } =
+    useContext(CartContext);
   const navigate = useNavigate();
 
-  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const totalPrice = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
 
   if (cart.length === 0) {
     return (
       <div className="cart-empty-container">
         <h2>Το καλάθι σας είναι άδειο.</h2>
-        <Link to="/" className="continue-shopping-btn">Συνέχεια αγορών</Link>
+        <Link to="/" className="continue-shopping-btn">
+          Συνέχεια αγορών
+        </Link>
       </div>
     );
   }
@@ -21,7 +27,7 @@ const CartPage = () => {
   return (
     <div className="cart-page-container">
       <h2>Το Καλάθι μου</h2>
-      
+
       <div className="cart-items-list">
         {cart.map((item, index) => (
           <div className="cart-item" key={index}>
@@ -29,7 +35,7 @@ const CartPage = () => {
               <h4>{item.title}</h4>
               <p>{item.price.toFixed(2)} €</p>
             </div>
-            
+
             <div className="cart-item-actions">
               <div className="quantity-controls">
                 <button onClick={() => decreaseQuantity(item.title)}>-</button>
@@ -41,7 +47,10 @@ const CartPage = () => {
                 {(item.price * item.quantity).toFixed(2)} €
               </div>
 
-              <button className="remove-item-btn" onClick={() => removeFromCart(item.title)}>
+              <button
+                className="remove-item-btn"
+                onClick={() => removeFromCart(item.title)}
+              >
                 Αφαίρεση
               </button>
             </div>
@@ -51,7 +60,18 @@ const CartPage = () => {
 
       <div className="cart-summary">
         <h3>Γενικό Σύνολο: {totalPrice.toFixed(2)} €</h3>
-        <button className="checkout-btn" onClick={() => navigate('/checkout')}>
+        <button
+          className="checkout-btn"
+          onClick={() => {
+            console.log("Cart sample item:", cart[0]);
+            navigate("/checkout", {
+              state: {
+                TotalPrice: totalPrice.toFixed(2),
+                Cart: cart,
+              },
+            });
+          }}
+        >
           Μετάβαση στο Ταμείο
         </button>
       </div>

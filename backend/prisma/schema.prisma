@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  role      Role     
+  createdAt DateTime @default(now())
+
+  orders    Order[]
+  reviews   Review[]
+  questions Question[]
+  answers   Answer[]
+}
+
+enum Role {
+  READER
+  AUTHOR
+  ADMIN
+}
+
+model Order {
+  id                String      @id @default(cuid())
+  paymentIntentId   String      @unique
+  userEmail         String
+  userName          String?
+  totalAmount       Float
+  status            OrderStatus @default(PENDING)
+  createdAt         DateTime    @default(now())
+
+  user    User?      @relation(fields: [userEmail], references: [email])
+  items   OrderItem[]
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model OrderItem {
+  id         String @id @default(cuid())
+  orderId    String
+  bookKey    String  // OpenLibrary key e.g. "/works/OL123W"
+  title      String
+  author     String
+  price      Float
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+// For later - forum functionality
+model Review {
+  id        String   @id @default(cuid())
+  bookKey   String
+  rating    Int      // 1-5
+  content   String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Question {
+  id        String   @id @default(cuid())
+  bookKey   String
+  content   String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  answers   Answer[]
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  content    String
+  createdAt  DateTime @default(now())
+  questionId String
+  userId     String
+  question   Question @relation(fields: [questionId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
