@@ -111,13 +111,13 @@ app.delete("/users/delete", async (req, res) => {
 
     // Find the user first to get their email and id
     const user = await prisma.user.findUnique({ where: { clerkId } });
-    if (!user) return res.json({ success: true }); // already gone
+    if (!user) return res.json({ success: true });
 
-    // Find all orders for this user
     const orders = await prisma.order.findMany({
       where: { userEmail: user.email },
       select: { id: true },
     });
+
     const orderIds = orders.map((o) => o.id);
 
     // Delete in order: children first, then parents
