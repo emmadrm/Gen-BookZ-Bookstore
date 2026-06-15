@@ -14,6 +14,12 @@ const roles = [
     description: "Δείτε στατιστικά πωλήσεων και απαντήστε σε σχόλια.",
     icon: "✍️",
   },
+  {
+    value: "ADMIN",
+    label: "Admin",
+    description: "Προκειται για τον διαχειριστη του καταστηματος",
+    icon: "👩🏻‍💼",
+  },
 ];
 
 const RoleModal = ({ onRoleSelected }) => {
