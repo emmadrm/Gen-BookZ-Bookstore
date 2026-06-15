@@ -32,28 +32,24 @@ const PaymentSuccess = () => {
   if (error) return <p>Σφάλμα: {error}</p>;
 
   return (
-    <div className="success-container">
-      <h2 className="text-black"> Η παραγγελία σας ολοκληρώθηκε!</h2>
+    <div className="success-container ">
+      <h2 className="text-black mt-3"> Η παραγγελία σας ολοκληρώθηκε!</h2>
       <p>
         Ευχαριστούμε, <strong>{order.userName}</strong>!
       </p>
-      <p>Email επιβεβαίωσης: {order.userEmail}</p>
+      <p className=" mt-3 text-amber-950">
+        Email επιβεβαίωσης: {order.userEmail}
+      </p>
 
-      <h3>Βιβλία που αγοράσατε:</h3>
-      <ul>
-        {order.items.map((item) => (
-          <li key={item.id}>
-            <strong>{item.title}</strong> — {item.author} —{" "}
-            {item.price.toFixed(2)}€
-          </li>
-        ))}
-      </ul>
-
-      <p>
+      <p className="text-amber-950">
         Σύνολο: <strong>{order.totalAmount.toFixed(2)}€</strong>
       </p>
 
-      <Link to="/">Επιστροφή στο κατάστημα</Link>
+      <Link to="/">
+        <button className="bg-amber-950 rounded-sm text-white px-3 mt-5 py-2 border-4 hover:bg-black">
+          Επιστροφη στο καταστημα
+        </button>
+      </Link>
     </div>
   );
 };

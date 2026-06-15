@@ -26,7 +26,7 @@ const CartPage = () => {
 
   return (
     <div className="cart-page-container">
-      <h2>Το Καλάθι μου</h2>
+      <p className="text-gray-400 font-bold mb-2 text-2xl">Το Καλάθι μου</p>
 
       <div className="cart-items-list">
         {cart.map((item, index) => (

@@ -123,19 +123,6 @@ app.delete("/users/delete", async (req, res) => {
     // Delete in order: children first, then parents
     await prisma.orderItem.deleteMany({ where: { orderId: { in: orderIds } } });
     await prisma.order.deleteMany({ where: { userEmail: user.email } });
-    await prisma.answer.deleteMany({ where: { userId: user.id } });
-    await prisma.review.deleteMany({ where: { userId: user.id } });
-
-    // Delete questions and their answers
-    const questions = await prisma.question.findMany({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-    const questionIds = questions.map((q) => q.id);
-    await prisma.answer.deleteMany({
-      where: { questionId: { in: questionIds } },
-    });
-    await prisma.question.deleteMany({ where: { userId: user.id } });
 
     // Finally delete the user
     await prisma.user.delete({ where: { clerkId } });
