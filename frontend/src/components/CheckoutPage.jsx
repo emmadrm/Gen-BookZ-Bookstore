@@ -45,7 +45,7 @@ const CheckoutPage = ({ amount }) => {
         <PaymentElement />
         <button
           disabled={loading || !stripe}
-          className="payment-btn"
+          className="bg-amber-950 rounded-md text-white px-3 mt-3 py-2 border-4 hover:bg-black"
           type="submit"
         >
           <span>{!loading ? `Pay: ${amount}€ ` : "Processing..."}</span>
