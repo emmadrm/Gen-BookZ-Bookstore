@@ -2,48 +2,58 @@ import { useState, useEffect } from "react";
 
 function Reviews({ initialReviews }) {
   
-  const [reviews, setReviews] = useState(initialReviews || []);
+  const formatReviews = (raw) => {
+    if (!raw || !Array.isArray(raw)) return [];
+    return raw.map((r, idx) => ({ 
+      id: r.id || `rev${idx}`, 
+      readerName: r.user?.name || 'Αναγνώστης', 
+      bookTitle: r.bookTitle || r.bookKey || 'Άγνωστο', 
+      date: r.createdAt ? new Date(r.createdAt).toLocaleDateString("el-GR") : '', 
+      rawDate: r.createdAt || new Date(0), 
+      rating: r.rating || 0, 
+      comment: r.content || '' 
+    }));
+  };
+
+  const [reviews, setReviews] = useState(() => formatReviews(initialReviews));
 
   const [sortBy, setSortBy] = useState("recent");
   const [selectedBookFilter, setSelectedBookFilter] = useState("all"); 
   const [selectedBookDetails, setSelectedBookDetails] = useState(null); 
 
+  // 3. Ενημερώνουμε με ασφάλεια όταν έρχονται νέα δεδομένα
   useEffect(() => {
-    if (initialReviews && Array.isArray(initialReviews)) {
-      setReviews(initialReviews.map((r, idx) => ({ id: r.id || `rev${idx}`, readerName: r.user?.name || 'Αναγνώστης', bookTitle: r.bookKey || r.book || 'Άγνωστο', date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '', rating: r.rating || 0, comment: r.content || '' })));
-    }
+    setReviews(formatReviews(initialReviews));
   }, [initialReviews]);
 
-  
   const bookFilteredReviews = selectedBookFilter === "all"
     ? reviews
     : reviews.filter(r => r.bookTitle === selectedBookFilter);
 
-  
   const totalReviews = bookFilteredReviews.length;
   const averageRating = totalReviews > 0 
     ? (bookFilteredReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1) 
     : "0.0";
 
-  
   const getDistributionPercentage = (stars) => {
     if (totalReviews === 0) return 0;
     const count = bookFilteredReviews.filter(r => r.rating === stars).length;
     return (count / totalReviews) * 100;
   };
 
-  
   const sortedReviews = [...bookFilteredReviews].sort((a, b) => {
     if (sortBy === "high") return b.rating - a.rating;
     if (sortBy === "low") return a.rating - b.rating;
-    return new Date(b.date.split('/').reverse().join('-')) - new Date(a.date.split('/').reverse().join('-'));
+    
+    const dateA = new Date(a.rawDate);
+    const dateB = new Date(b.rawDate);
+    return dateB - dateA;
   });
 
   const handleReportReview = (reviewId) => {
     alert("Η κριτική έχει επισημανθεί για έλεγχο από την ομάδα υποστήριξης του GenBookZ.");
   };
 
-  
   const renderStars = (rating) => {
     return (
       <span style={{ color: "#d4af37", fontSize: "16px", letterSpacing: "2px" }}>

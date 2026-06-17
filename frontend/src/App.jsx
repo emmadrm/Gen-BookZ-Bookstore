@@ -18,6 +18,7 @@ import RoleModal from "./components/RoleModal.jsx";
 import Library from "./components/Library.jsx";
 import BookForum from "./components/BookForum.jsx";
 import AuthorDashboard from "./pages/AuthorDashboard/AuthorDashboard.jsx";
+import AdminDashboard from "./pages/AdminDashboard.jsx";
 
 function ProtectedApp() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -85,8 +86,8 @@ function ProtectedApp() {
 
     if (role === "AUTHOR") {
       navigate("/author-dashboard");
-    } else {
-      navigate("/"); // Αν είναι αναγνώστης, πάει στην αρχική
+    }else if (role === "ADMIN") {
+      navigate("/admin");
     }
   };
 
@@ -119,6 +120,7 @@ function ProtectedApp() {
         <Route path="/library" element={<Library />} />
         <Route path="/library/:bookKey" element={<BookForum />} />
         <Route path="/author-dashboard" element={<AuthorDashboard />} />
+        <Route path="/admin/*" element={<AdminDashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Footer />

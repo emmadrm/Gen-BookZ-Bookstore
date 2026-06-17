@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import {
   FaSearch,
   FaShoppingCart,
@@ -10,7 +10,7 @@ import Logo from "../assets/Logoo.png";
 import { Link, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/Cart.jsx";
 import "../index.css";
-import { UserButton } from "@clerk/react";
+import { UserButton, useUser } from "@clerk/react";
 
 const Header = () => {
   const { cart } = useContext(CartContext);
@@ -21,6 +21,22 @@ const Header = () => {
   );
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+
+  const { user } = useUser();
+  const [userRole, setUserRole] = useState(null);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetch(`http://localhost:3000/users/${user.id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.user) {
+            setUserRole(data.user.role);
+          }
+        })
+        .catch((err) => console.error("Σφάλμα ανάκτησης ρόλου:", err));
+    }
+  }, [user]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -132,6 +148,22 @@ const Header = () => {
           <li>
             <Link to="/category/children">ΠΑΙΔΙΚΑ</Link>
           </li>
+          
+          {/* Εμφανίζεται ΜΟΝΟ αν ο χρήστης είναι ADMIN */}
+          {userRole === "ADMIN" && (
+            <li>
+              <Link 
+                to="/admin" 
+                style={{ 
+                  color: "#c62828", // Το άλλαξα σε σκούρο κόκκινο για να τραβάει την προσοχή του Admin
+                  fontWeight: "bold",
+                  textShadow: "-1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white"
+                  }}>
+                  ADMIN PANEL
+              </Link>
+            </li>
+          )}
+
         </ul>
       </nav>
     </header>
