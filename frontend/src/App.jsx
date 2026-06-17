@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useAuth, useUser } from "@clerk/react";
 import { CartProvider } from "./context/Cart.jsx";
 import { ToastContainer } from "react-toastify";
@@ -17,14 +17,19 @@ import PaymentSuccess from "./pages/PaymentSuccess.jsx";
 import RoleModal from "./components/RoleModal.jsx";
 import Library from "./components/Library.jsx";
 import BookForum from "./components/BookForum.jsx";
+import AuthorDashboard from "./pages/AuthorDashboard/AuthorDashboard.jsx";
 
 function ProtectedApp() {
-  const { isSignedIn, isLoaded, signOut } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
   const [needsRole, setNeedsRole] = useState(false);
   const [userSaved, setUserSaved] = useState(false);
   const clerkIdRef = useRef(null);
 
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Αποθήκευση του ID για τη συνεδρία
   useEffect(() => {
     if (user?.id) {
       clerkIdRef.current = user.id;
@@ -32,52 +37,34 @@ function ProtectedApp() {
     }
   }, [user]);
 
-  // Check if user is already saved in DB when they sign in
+  // 1. ΕΛΕΓΧΟΣ ΡΟΛΟΥ: Κοιτάμε ΜΟΝΟ την προσωρινή μνήμη, όχι τη Βάση!
   useEffect(() => {
     if (!isSignedIn || !user) return;
 
-    fetch(`http://localhost:3000/users/${user.id}`)
-      .then((res) => res.json())
-      .then(({ user: dbUser }) => {
-        if (dbUser) {
-          // Already in DB with a role — good to go
-          setUserSaved(true);
-          setNeedsRole(false);
-        } else {
-          // New sign in — needs role selection
-          setNeedsRole(true);
-        }
-      });
+    const hasChosenRole = sessionStorage.getItem("roleChosen");
+    if (hasChosenRole) {
+      // Αν διάλεξε ρόλο σε αυτή τη συνεδρία (π.χ. έκανε refresh τη σελίδα), προχωράει
+      setUserSaved(true);
+      setNeedsRole(false);
+    } else {
+      // Αν μόλις έκανε Login, του ζητάμε ΠΑΝΤΑ ρόλο
+      setNeedsRole(true);
+      setUserSaved(false);
+    }
   }, [isSignedIn, user]);
 
-  // Delete user from DB on sign out
+  // 2. ΑΠΟΣΥΝΔΕΣΗ: Καθαρίζουμε ΜΟΝΟ τη μνήμη, ΔΕΝ διαγράφουμε τίποτα από τη Βάση!
   useEffect(() => {
-    const storedClerkId =
-      clerkIdRef.current || sessionStorage.getItem("clerkId");
-    console.log("Sign out effect fired:", {
-      isLoaded,
-      isSignedIn,
-      storedClerkId,
-    });
-    if (isLoaded && !isSignedIn && storedClerkId) {
-      console.log("Attempting delete for:", clerkIdRef.current);
-      fetch("http://localhost:3000/users/delete", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clerkId: storedClerkId }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log("Delete response:", data);
-          sessionStorage.removeItem("clerkId");
-          clerkIdRef.current = null;
-          setUserSaved(false);
-          setNeedsRole(false);
-        })
-        .catch((err) => console.error("Delete failed:", err));
+    if (isLoaded && !isSignedIn) {
+      console.log("Ο χρήστης αποσυνδέθηκε - Καθαρισμός Session");
+      sessionStorage.clear(); // Αδειάζει η μνήμη
+      clerkIdRef.current = null;
+      setUserSaved(false);
+      setNeedsRole(false);
     }
   }, [isSignedIn, isLoaded]);
 
+  // 3. ΕΠΙΛΟΓΗ ΡΟΛΟΥ: Αποθηκεύουμε την επιλογή στο session και κάνουμε update στη Βάση
   const handleRoleSelected = async (role) => {
     await fetch("http://localhost:3000/users/save", {
       method: "POST",
@@ -89,8 +76,18 @@ function ProtectedApp() {
         role,
       }),
     });
+    
+    // Αποθηκεύουμε ότι διαλέξαμε ρόλο για να μη μας ξαναρωτήσει αν κάνουμε Refresh (F5)
+    sessionStorage.setItem("roleChosen", "true");
+    
     setNeedsRole(false);
     setUserSaved(true);
+
+    if (role === "AUTHOR") {
+      navigate("/author-dashboard");
+    } else {
+      navigate("/"); // Αν είναι αναγνώστης, πάει στην αρχική
+    }
   };
 
   if (!isLoaded) return null;
@@ -102,9 +99,11 @@ function ProtectedApp() {
   // Wait until user is confirmed saved
   if (!userSaved) return null;
 
+  const hideHeader = location.pathname === "/author-dashboard";
+
   return (
     <CartProvider>
-      <Header />
+      {!hideHeader && <Header />}
       <ToastContainer
         position="bottom-right"
         autoClose={2500}
@@ -119,6 +118,7 @@ function ProtectedApp() {
         <Route path="/search/:query" element={<Search />} />
         <Route path="/library" element={<Library />} />
         <Route path="/library/:bookKey" element={<BookForum />} />
+        <Route path="/author-dashboard" element={<AuthorDashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Footer />

@@ -16,7 +16,7 @@ const CartPage = () => {
   if (cart.length === 0) {
     return (
       <div className="cart-empty-container">
-        <h2>Το καλάθι σας είναι άδειο.</h2>
+        <h2 style={{ color: 'black' }}>Το καλάθι σας είναι άδειο.</h2>
         <Link to="/" className="continue-shopping-btn">
           Συνέχεια αγορών
         </Link>

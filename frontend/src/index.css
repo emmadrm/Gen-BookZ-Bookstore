@@ -66,6 +66,7 @@
   border: 2px solid #a3acb6;
   border-radius: 4px;
   overflow: hidden;
+  color: white;
 }
 
 .search-input {
@@ -259,7 +260,7 @@ body {
 
 .books-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 30px;
 }
 
@@ -363,6 +364,12 @@ body {
 
 .add-to-cart-btn:hover {
   background-color: #866a6a;
+}
+
+@media (max-width: 768px) {
+  .books-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* CHECKOUT PAGE */

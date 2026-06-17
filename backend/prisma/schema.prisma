@@ -22,6 +22,8 @@ model User {
   role      Role     
   createdAt DateTime @default(now())
 
+  books     Book[]
+
   orders    Order[]
   reviews   Review[]
   questions Question[]
@@ -32,6 +34,29 @@ enum Role {
   READER
   AUTHOR
   ADMIN
+}
+
+model Book {
+  id          String   @id @default(cuid())
+
+  bookKey     String   @unique
+
+  title       String
+  isbn        String   @unique
+
+  description String?
+  category    String?
+
+  coverUrl    String?
+
+  price       Float?
+
+  author      String
+
+  authorId    String
+  authorUser  User     @relation(fields: [authorId], references: [id])
+
+  createdAt   DateTime @default(now())
 }
 
 model Order {

@@ -4,17 +4,35 @@ import dotenv from "dotenv";
 import Stripe from "stripe";
 import { prisma } from "./db.js";
 
-dotenv.config({ path: "./.env.local" });
+dotenv.config({ path: "./.env" });
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 
-app.use(express.json());
+// Αυξάνουμε το όριο στα 50mb για να χωράνε οι εικόνες Base64
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
 
 app.get("/config", (req, res) => {
   res.send({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY });
+});
+
+// Endpoint για την αποθήκευση απαντήσεων σε ερωτήσεις
+app.post("/book/answer", async (req, res) => {
+  try {
+    const { questionId, content, clerkId } = req.body;
+    const user = await prisma.user.findUnique({ where: { clerkId } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const answer = await prisma.answer.create({
+      data: { content, questionId, userId: user.id }
+    });
+    res.json({ answer });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Create payment intent AND save a pending order
@@ -104,7 +122,7 @@ app.post("/users/save", async (req, res) => {
   }
 });
 
-// Delete user on sign out
+/* Delete user on sign out
 app.delete("/users/delete", async (req, res) => {
   try {
     const { clerkId } = req.body;
@@ -132,6 +150,13 @@ app.delete("/users/delete", async (req, res) => {
     console.error(error);
     res.status(500).json({ error: error.message });
   }
+}); */
+
+// Delete user on sign out - ΔΙΟΡΘΩΘΗΚΕ: Πλέον δεν σβήνει παραγγελίες ούτε τον χρήστη
+app.delete("/users/delete", async (req, res) => {
+  // Απλώς επιστρέφουμε επιτυχία για να μην "σκάει" το frontend αν το καλέσει
+  sessionStorage.clear();
+  res.json({ success: true, message: "Ασφαλής αποσύνδεση. Τα δεδομένα διατηρήθηκαν." });
 });
 
 // Check if user already has a role saved
@@ -206,6 +231,223 @@ app.get("/book/:bookKey/forum", async (req, res) => {
 
     res.json({ reviews, questions });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Author dashboard data
+app.get("/author/:clerkId/dashboard", async (req, res) => {
+  try {
+    const { clerkId } = req.params;
+    const user = await prisma.user.findUnique({ where: { clerkId } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // 1. Φέρνουμε τα βιβλία του συγγραφέα
+    const books = await prisma.book.findMany({ where: { authorId: user.id } });
+    const bookKeys = books.map((b) => b.bookKey);
+
+    // 2. Φέρνουμε τα αντικείμενα που έχουν πουληθεί μαζί με τις πληροφορίες της παραγγελίας (για την ημερομηνία)
+    const soldItems = await prisma.orderItem.findMany({
+      where: { 
+        bookKey: { in: bookKeys },
+        order: { status: "COMPLETED" } 
+      },
+      include: { order: true }
+    });
+
+    // 3. Υπολογισμός πωλήσεων ανά βιβλίο
+    const salesByBook = {};
+    soldItems.forEach((it) => {
+      if (!salesByBook[it.bookKey]) salesByBook[it.bookKey] = { sales: 0, revenue: 0 };
+      salesByBook[it.bookKey].sales += 1;
+      salesByBook[it.bookKey].revenue += it.price || 0;
+    });
+
+    let totalSales = 0;
+    let totalEarnings = 0;
+    books.forEach((b) => {
+      totalSales += salesByBook[b.bookKey]?.sales || 0;
+      totalEarnings += salesByBook[b.bookKey]?.revenue || 0;
+    });
+
+    // Χαρτογράφηση στατιστικών και υπολογισμός ποσοστού % για τα progress bars των Analytics
+    const booksWithStats = books.map((b) => {
+      const sales = salesByBook[b.bookKey]?.sales || 0;
+      return {
+        ...b,
+        sales,
+        revenue: salesByBook[b.bookKey]?.revenue || 0,
+        percentage: totalSales > 0 ? Math.round((sales / totalSales) * 100) : 0
+      };
+    });
+
+    const topBooks = booksWithStats.sort((a, c) => (c.sales || 0) - (a.sales || 0));
+
+    // Δημιουργία πρόσφατων αγορών με πραγματικές ημερομηνίες
+    const recentTransactions = soldItems
+      .slice(0, 10)
+      .map((it) => ({ 
+        id: it.id.slice(-6).toUpperCase(), 
+        book: it.title, 
+        amount: `${it.price.toFixed(2)} €`,
+        date: it.order?.createdAt ? new Date(it.order.createdAt).toLocaleDateString('el-GR') : "-",
+        format: "E-book"
+      }));
+
+    // 4. Φέρνουμε κριτικές και ερωτήσεις συνδέοντάς τις με τους πραγματικούς τίτλους
+    const uniqueBookKeys = Array.from(new Set(bookKeys.filter(Boolean)));
+    let reviews = [];
+    let questions = [];
+
+    const bookKeyToTitle = {};
+    books.forEach(b => { bookKeyToTitle[b.bookKey] = b.title; });
+
+    if (uniqueBookKeys.length > 0) {
+      const dbReviews = await prisma.review.findMany({
+        where: { bookKey: { in: uniqueBookKeys } },
+        include: { user: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+      });
+      reviews = dbReviews.map(r => ({ ...r, bookTitle: bookKeyToTitle[r.bookKey] || "Άγνωστο" }));
+
+      const dbQuestions = await prisma.question.findMany({
+        where: { bookKey: { in: uniqueBookKeys } },
+        include: { 
+          user: { select: { name: true } },
+          answers: true 
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      questions = dbQuestions.map(q => ({ ...q, bookTitle: bookKeyToTitle[q.bookKey] || "Άγνωστο" }));
+    }
+
+    res.json({
+      totalSales,
+      totalEarnings,
+      topBooks,
+      recentTransactions,
+      books: booksWithStats,
+      reviews,
+      questions,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Αναζήτηση τοπικών βιβλίων συγγραφέων
+app.get("/search/local", async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.json([]);
+
+    const books = await prisma.book.findMany({
+      where: {
+        OR: [
+          { title: { contains: q, mode: 'insensitive' } },
+          { author: { contains: q, mode: 'insensitive' } }
+        ]
+      }
+    });
+
+    res.json(books);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get books for author by clerkId
+app.get("/author/:clerkId/books", async (req, res) => {
+  try {
+    const { clerkId } = req.params;
+    const user = await prisma.user.findUnique({ where: { clerkId } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const books = await prisma.book.findMany({ where: { authorId: user.id }, orderBy: { createdAt: "desc" } });
+    res.json({ books });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create a book (author determined by clerkId)
+app.post("/books", async (req, res) => {
+  try {
+    const { clerkId, title, isbn, price, category, coverUrl, description } = req.body;
+    const user = await prisma.user.findUnique({ where: { clerkId } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const bookKey = `bk_${Date.now()}`;
+    const book = await prisma.book.create({
+      data: {
+        bookKey,
+        title,
+        isbn,
+        price: price ? Number(price) : undefined,
+        category,
+        coverUrl,
+        description,
+        author: user.name || "",
+        authorId: user.id,
+      },
+    });
+
+    res.json({ book });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete a book by bookKey (only author can delete)
+app.delete("/books/:bookKey", async (req, res) => {
+  try {
+    const { bookKey } = req.params;
+    const { clerkId } = req.body;
+    const user = await prisma.user.findUnique({ where: { clerkId } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const book = await prisma.book.findUnique({ where: { bookKey } });
+    if (!book) return res.status(404).json({ error: "Book not found" });
+    if (book.authorId !== user.id) return res.status(403).json({ error: "Not allowed" });
+
+    await prisma.book.delete({ where: { bookKey } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update a book (only author)
+app.patch("/books/:bookKey", async (req, res) => {
+  try {
+    const { bookKey } = req.params;
+    const { clerkId, title, isbn, price, category, coverUrl, description } = req.body;
+    const user = await prisma.user.findUnique({ where: { clerkId } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const book = await prisma.book.findUnique({ where: { bookKey } });
+    if (!book) return res.status(404).json({ error: "Book not found" });
+    if (book.authorId !== user.id) return res.status(403).json({ error: "Not allowed" });
+
+    const updated = await prisma.book.update({
+      where: { bookKey },
+      data: {
+        title,
+        isbn,
+        price: price ? Number(price) : undefined,
+        category,
+        coverUrl,
+        description,
+      },
+    });
+    res.json({ book: updated });
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ error: error.message });
   }
 });
