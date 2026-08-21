@@ -20,25 +20,23 @@ Tech Stack
 Frontend: React.js, JavaScript, HTML/CSS
 Backend: Node.js, Express.js
 Database: SQL
-Getting Started
+
+# Getting Started
 Prerequisites
 Node.js and npm installed
-Installation
+# Installation
 bash
 git clone https://github.com/emmadrm/Gen-BookZ-Bookstore.git
 cd Gen-BookZ-Bookstore
-
-# Install backend dependencies
 cd backend
 npm install
 
-# Install frontend dependencies
-cd ../frontend
+# Start the backend
+cd backend
 npm install
-Running locally
-bash
-# Start the backend (in /backend)
 nodemon server.js
 
-# In a separate terminal, start the frontend (in /frontend)
+# In a separate terminal, start the frontend
+cd frontend
+npm install
 npm run dev
