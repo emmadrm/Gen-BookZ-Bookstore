@@ -67,7 +67,7 @@ const BookForum = () => {
     });
 
     const { review } = await res.json();
-    setReviews((prev) => [review, ...prev]); // optimistic prepend
+    setReviews((prev) => [review, ...prev]); 
     setNewRating(0);
     setNewReview("");
     setSubmitting(false);
@@ -88,7 +88,7 @@ const BookForum = () => {
     });
 
     const { question } = await res.json();
-    setQuestions((prev) => [question, ...prev]); // optimistic prepend
+    setQuestions((prev) => [question, ...prev]); 
     setNewQuestion("");
     setSubmitting(false);
   };

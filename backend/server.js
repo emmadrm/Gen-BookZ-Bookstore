@@ -378,7 +378,6 @@ app.get("/author/:clerkId/books", async (req, res) => {
   }
 });
 
-// Create a book (author determined by clerkId)
 // Δημιουργία βιβλίου (επιτρέπει πλέον χειροκίνητο Συγγραφέα)
 app.post("/books", async (req, res) => {
   try {
@@ -432,7 +431,6 @@ app.delete("/books/:bookKey", async (req, res) => {
 });
 
 // Update a book (only author)
-// Update a book
 app.patch("/books/:bookKey", async (req, res) => {
   try {
     const { bookKey } = req.params;

@@ -26,7 +26,7 @@ const AdminDashboard = () => {
 
   // Πεδία Φόρμας Βιβλίου
   const [title, setTitle] = useState("");
-  const [author, setAuthor] = useState(""); // <-- ΝΕΟ STATE
+  const [author, setAuthor] = useState(""); 
   const [isbn, setIsbn] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("Λογοτεχνία");
@@ -101,7 +101,7 @@ const AdminDashboard = () => {
   const handleEditClick = (book) => {
     setEditingBook(book);
     setTitle(book.title);
-    setAuthor(book.author || ""); // <-- ΓΕΜΙΣΜΑ ΣΥΓΓΡΑΦΕΑ
+    setAuthor(book.author || ""); 
     setIsbn(book.isbn);
     setPrice(book.price || "");
     setCoverUrl(book.coverUrl || "");
@@ -150,7 +150,7 @@ const AdminDashboard = () => {
   const handleCancelForm = () => {
     setEditingBook(null);
     setTitle("");
-    setAuthor(""); // <-- ΚΑΘΑΡΙΣΜΟΣ ΣΥΓΓΡΑΦΕΑ
+    setAuthor(""); 
     setIsbn("");
     setPrice("");
     setCategory("Λογοτεχνία");
