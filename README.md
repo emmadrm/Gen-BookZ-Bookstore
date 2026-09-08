@@ -23,19 +23,19 @@
 
 | Landing page | Home / book catalogue | Book page (reviews & Q&A) |
 |---|---|---|
-| ![Landing page](docs/screenshots/landing.png) | ![Home page](docs/screenshots/home.png) | ![Book reviews and Q&A](docs/screenshots/customer-comments.png) |
+| ![Landing page](frontend/docs/screenshots/landing.png) | ![Home page](frontend/docs/screenshots/home.png) | ![Book reviews and Q&A](frontend/docs/screenshots/customer-comments.png) |
 
 **Author dashboard**
 
 | Sales analytics | Reviews | Reader comments & Q&A |
 |---|---|---|
-| ![Author analytics](docs/screenshots/author-analytics.png) | ![Author reviews](docs/screenshots/admin-reviews.png) | ![Author comments](docs/screenshots/author-comments.png) |
+| ![Author analytics](frontend/docs/screenshots/author-analytics.png) | ![Author reviews](frontend/docs/screenshots/admin-reviews.png) | ![Author comments](frontend/docs/screenshots/author-comments.png) |
 
 **Admin dashboard**
 
 | Store stats | Orders | Comment moderation |
 |---|---|---|
-| ![Admin stats](docs/screenshots/admin-stats.png) | ![Admin orders](docs/screenshots/admin-orders.png) | ![Admin comment moderation](docs/screenshots/admin-comments.png) |
+| ![Admin stats](frontend/docs/screenshots/admin-stats.png) | ![Admin orders](frontend/docs/screenshots/admin-orders.png) | ![Admin comment moderation](frontend/docs/screenshots/admin-comments.png) |
 
 ## What it does
 
